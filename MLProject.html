@@ -128,6 +128,37 @@ confusionMatrix(trainmodel,training$classe)
 
 testmodel &lt;- predict(rf, newdata=testing)
 confusionMatrix(testmodel,training$classe)</code></pre>
+<pre class="r"><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction    A    B    C    D    E
+         A 1674    5    0    0    0
+         B    0 1134    8    0    0
+         C    0    0 1018    8    0
+         D    0    0    0  955    3
+         E    0    0    0    1 1079
+
+Overall Statistics
+                                          
+               Accuracy : 0.9958          
+                 95% CI : (0.9937, 0.9972)
+    No Information Rate : 0.2845          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.9946          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            1.0000   0.9956   0.9922   0.9907   0.9972
+Specificity            0.9988   0.9983   0.9984   0.9994   0.9998
+Pos Pred Value         0.9970   0.9930   0.9922   0.9969   0.9991
+Neg Pred Value         1.0000   0.9989   0.9984   0.9982   0.9994
+Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+Detection Rate         0.2845   0.1927   0.1730   0.1623   0.1833
+Detection Prevalence   0.2853   0.1941   0.1743   0.1628   0.1835
+Balanced Accuracy      0.9994   0.9970   0.9953   0.9950   0.9985</code></pre>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
