@@ -1,0 +1,107 @@
+---
+title: "MLProject"
+author: "Charlie"
+date: "Friday, November 21, 2014"
+output: html_document
+---
+### Summary
+This project is aim find the model that is best to predict the manner in which a participant did the exercise, with the outcome as the "classe" variable in the training set. We will explore all the variables necessoary need to predict. This report will describe how model was built, how cross validation was used, the expected out of sample error is, and why we made certain choices. Then we will also use our prediction model to predict 20 different test cases. 
+
+
+### Getting training and testing datasets
+
+```{r}
+library(caret)
+# since this data have strings such as 'NA', 'NULL', #DIV/0! and blank, so we will assign all of them as "NA"
+trainingData <- read.csv ("pml-training.csv", na.strings=c("#DIV/0!", "NA","","NULL"))
+testingData <- read.csv ("pml-testing.csv", na.strings=c("#DIV/0!", "NA","","NULL"))
+
+```
+
+### Exploratory Data Analysis
+
+```{r, echo=TRUE, results='hide'}
+# We will explore the training data only for potential cross-validation
+
+head(trainingData)
+dim(trainingData)
+summary(trainingData)
+```
+
+From the above analysis, we found there are 159 variables potentially for this product and we would like to find reduce the number of prediction variables.
+
+### Reduce the number of variables
+
+If the column has majority of its rows as NAs, then we decide they are not providing good values as predictor, thus considered noise.
+
+```{r}
+# If the column has majority of its rows as NAs, then we decide they are not providing good values as predictor, thus considered noise.
+# Sum NAs per column
+naValues <- apply(trainingData, 2, function(x) { sum(is.na(x)) })
+
+# Remove columns with more than 50% of NAs
+threshold <- nrow(trainingData) * 0.5
+trainingData <- trainingData[, which(naValues < threshold)]
+testingData <- testingData[, which(naValues < threshold)]
+```
+
+we also drop other variables that are not good predictors or irrevelant to the outcome, such variables include timestamp, user_name, window, index.
+
+```{r,results='hide'}
+dropColumns <- grep("timestamp|user_name|new_window|num_window|X", names(trainingData))
+trainingData <- trainingData[, -dropColumns]
+testingData <- testingData[, -dropColumns]
+```
+
+##Cross Validation 
+
+```{r}
+# Set the seed to make the model reproducible
+set.seed(1500)
+inTrain = createDataPartition(trainingData$classe, p=0.7, list=FALSE)
+# As the cross-validtion lecture indicates, 70% of the training data will be used to train the model
+training <- trainingData[inTrain,]
+testing <- trainingData[-inTrain,]
+```
+
+## Machining Learning Model Selection
+To select the best model, we decided to go with random forest, since it tends to the most accurate, and also we have many predictor variables fro this project, and implementing it in production environment is not the priority. Random forest model tends to be very accurate.
+ 
+Here is the regular model for building random forest model, 
+```{r,results='hide',eval=FALSE}
+rf <- train(classe ~., data=training, method="rf", trControl= trainControl(method="cv", number=10))
+```
+
+however the above excercise also tends to be a very memory intense algorithm, thus it is best that we try to utilize parallel computing resources. Hence, we used the alternative method from the foreach function,
+
+```{r, results='hide',eval=FALSE,echo=TRUE}
+registerDoParallel()
+outcome <- training$classe
+variables <- training[-ncol(training)]
+
+rf <- foreach(ntree=rep(150, 6), .combine=randomForest::combine, .packages='randomForest') %dopar% {
+  randomForest(variables, outcome, ntree=ntree) 
+}
+```
+
+
+## Error Reports for both training and testing data set
+```{r,eval=FALSE}
+# final model
+rf$finalModel
+```
+
+
+```{r, eval=FALSE}
+
+trainmodel <- predict(rf, newdata=training)
+confusionMatrix(trainmodel,training$classe)
+
+testmodel <- predict(rf, newdata=testing)
+confusionMatrix(testmodel,training$classe)
+```
+
+##Conclusion
+
+As can be seen from the confusion matrix this model is very accurate. After experimenting with PCA and other models, this is the most accurate model for test data, which was around 99% accuracy.
+
